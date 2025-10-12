@@ -1,23 +1,20 @@
-import logo from './logo.svg';
-import './App.css';
+import React, { useState } from "react";
+import UserList from "./components/UserList";
+import AddUser from "./components/AddUser";
 
 function App() {
+  const [refresh, setRefresh] = useState(false);
+
+  // Khi thêm user mới thì làm mới danh sách
+  const handleUserAdded = () => {
+    setRefresh(!refresh);
+  };
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div style={{ margin: "20px", fontFamily: "Arial, sans-serif" }}>
+      <h1>Quản lý người dùng</h1>
+      <AddUser onUserAdded={handleUserAdded} />
+      <UserList key={refresh} />
     </div>
   );
 }

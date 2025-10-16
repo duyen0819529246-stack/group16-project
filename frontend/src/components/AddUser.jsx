@@ -2,40 +2,38 @@ import React, { useState } from "react";
 import axios from "axios";
 
 const AddUser = ({ onUserAdded }) => {
-  const [newUser, setNewUser] = useState({ name: "", email: "" });
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
 
-  const handleChange = (e) => {
-    setNewUser({ ...newUser, [e.target.name]: e.target.value });
-  };
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    axios.post("http://localhost:3000/users", newUser)
-      .then(res => {
-        onUserAdded(res.data);
-        setNewUser({ name: "", email: "" });
-      })
-      .catch(err => console.error("Error adding user:", err));
+    const newUser = { name, email };
+
+    try {
+      await axios.post(`${process.env.REACT_APP_API_URL}/users`, newUser);
+      alert("Thêm user thành công!");
+      setName("");
+      setEmail("");
+      onUserAdded();
+    } catch (err) {
+      console.error("Lỗi khi thêm user:", err);
+    }
   };
 
   return (
     <form onSubmit={handleSubmit}>
-      <h2>Thêm User mới</h2>
+      <h2>Thêm User</h2>
       <input
         type="text"
-        name="name"
+        value={name}
         placeholder="Tên"
-        value={newUser.name}
-        onChange={handleChange}
-        required
+        onChange={(e) => setName(e.target.value)}
       />
       <input
         type="email"
-        name="email"
+        value={email}
         placeholder="Email"
-        value={newUser.email}
-        onChange={handleChange}
-        required
+        onChange={(e) => setEmail(e.target.value)}
       />
       <button type="submit">Thêm</button>
     </form>

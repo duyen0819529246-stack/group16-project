@@ -5,17 +5,17 @@ const UserList = () => {
   const [users, setUsers] = useState([]);
 
   useEffect(() => {
-    axios.get("http://localhost:3000/users")
+    axios.get(`${process.env.REACT_APP_API_URL}/users`)
       .then(res => setUsers(res.data))
-      .catch(err => console.error("Error fetching users:", err));
+      .catch(err => console.error("Lỗi khi lấy user:", err));
   }, []);
 
   return (
     <div>
       <h2>Danh sách User</h2>
       <ul>
-        {users.map((user, index) => (
-          <li key={index}>{user.name} - {user.email}</li>
+        {users.map((u, i) => (
+          <li key={i}>{u.name} - {u.email}</li>
         ))}
       </ul>
     </div>

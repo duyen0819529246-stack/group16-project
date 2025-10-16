@@ -1,20 +1,26 @@
-import React, { useState } from "react";
-import UserList from "./components/UserList";
-import AddUser from "./components/AddUser";
+import React, { useEffect, useState } from "react";
 
 function App() {
-  const [refresh, setRefresh] = useState(false);
+  const [users, setUsers] = useState([]);
 
-  // Khi thêm user mới thì làm mới danh sách
-  const handleUserAdded = () => {
-    setRefresh(!refresh);
-  };
+  // Gọi API backend để lấy dữ liệu từ MongoDB
+  useEffect(() => {
+    fetch("http://localhost:5000/api/users")
+      .then(res => res.json())
+      .then(data => setUsers(data))
+      .catch(err => console.error("Lỗi khi tải dữ liệu:", err));
+  }, []);
 
   return (
-    <div style={{ margin: "20px", fontFamily: "Arial, sans-serif" }}>
-      <h1>Quản lý người dùng</h1>
-      <AddUser onUserAdded={handleUserAdded} />
-      <UserList key={refresh} />
+    <div style={{ padding: 20 }}>
+      <h1>Danh sách người dùng từ MongoDB</h1>
+      <ul>
+        {users.map(user => (
+          <li key={user._id}>
+            {user.name} - {user.email}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

@@ -1,26 +1,31 @@
-import React, { useEffect, useState } from "react";
+// src/App.js
+import React, { useState } from "react";
+import Signup from "./components/Signup";
+import Login from "./components/Login";
+import HeaderAuth from "./components/HeaderAuth";
+import "./App.css";
 
 function App() {
-  const [users, setUsers] = useState([]);
+  const [auth, setAuth] = useState({});
 
-  // Gọi API backend để lấy dữ liệu từ MongoDB
-  useEffect(() => {
-    fetch("http://localhost:5000/api/users")
-      .then(res => res.json())
-      .then(data => setUsers(data))
-      .catch(err => console.error("Lỗi khi tải dữ liệu:", err));
-  }, []);
+  const onLogin = (payload) => {
+    setAuth(payload);
+  };
+  const onLogout = () => {
+    setAuth({});
+  };
 
   return (
-    <div style={{ padding: 20 }}>
-      <h1>Danh sách người dùng từ MongoDB</h1>
-      <ul>
-        {users.map(user => (
-          <li key={user._id}>
-            {user.name} - {user.email}
-          </li>
-        ))}
-      </ul>
+    <div className="container">
+      <header>
+        <h1>Authentication Demo (Frontend)</h1>
+        <HeaderAuth onLogout={onLogout} />
+      </header>
+
+      <main style={{ display: "flex", gap: 20, justifyContent: "center", marginTop: 20 }}>
+        <Signup />
+        <Login onLogin={onLogin} />
+      </main>
     </div>
   );
 }

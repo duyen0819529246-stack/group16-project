@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
@@ -230,5 +231,15 @@ export const uploadAvatar = async (req, res) => {
       error: error.message,
       stack: error.stack, // thêm dòng này để xem lỗi cụ thể
     });
+=======
+import User from "../models/userModel.js";
+
+export const getUsers = async (req, res) => {
+  try {
+    const users = await User.find();
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ message: "Lỗi server" });
+>>>>>>> 3975f2a7ad13d8ca03c4aea696bc5bc3a554ee23
   }
 };

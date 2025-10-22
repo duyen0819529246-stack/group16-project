@@ -1,0 +1,151 @@
+{
+  "info": {
+    "_postman_id": "group16-auth-collection",
+    "name": "Group16 Auth",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Signup",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "// ensure timestamp is set so signup email is unique",
+              "pm.environment.set('timestamp', Date.now());"
+            ],
+            "type": "text/javascript"
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// save the actual signup email to environment so Login can use it",
+              "const email = `test+${pm.environment.get('timestamp')}@example.com`;",
+              "pm.environment.set('lastSignupEmail', email);",
+              "console.log('Saved lastSignupEmail:', email);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Test User\",\n  \"email\": \"test+{{timestamp}}@example.com\",\n  \"age\": 21,\n  \"password\": \"pass123\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/users/signup",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "users",
+            "signup"
+          ]
+        }
+      },
+      "response": []
+    },
+    
+    {
+      "name": "Login",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{lastSignupEmail}}\",\n  \"password\": \"pass123\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/users/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "users",
+            "login"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const res = pm.response.json();",
+              "if (res && res.token) { pm.environment.set('authToken', res.token); }",
+              "// also set timestamp used by signup unique email",
+              "pm.environment.set('timestamp', Date.now());"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "response": []
+    },
+    {
+      "name": "Get Users",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/users",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "users"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Logout",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/users/logout",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "users",
+            "logout"
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}

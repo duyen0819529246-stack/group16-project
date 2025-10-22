@@ -1,0 +1,33 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Signup</title>
+  </head>
+  <body>
+    <h1>Signup</h1>
+    <form id="signupForm">
+      <label>Name: <input type="text" name="name" required></label><br>
+      <label>Email: <input type="email" name="email" required></label><br>
+      <label>Age: <input type="number" name="age" required></label><br>
+      <label>Password: <input type="password" name="password" required></label><br>
+      <button type="submit">Signup</button>
+    </form>
+    <pre id="out"></pre>
+    <script>
+      const f = document.getElementById('signupForm');
+      const out = document.getElementById('out');
+      f.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const data = Object.fromEntries(new FormData(f));
+        const res = await fetch('/api/users/signup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        const j = await res.json();
+        out.textContent = JSON.stringify({ status: res.status, body: j }, null, 2);
+      });
+    </script>
+  </body>
+ </html>

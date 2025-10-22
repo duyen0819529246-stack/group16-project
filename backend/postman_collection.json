@@ -7,6 +7,30 @@
   "item": [
     {
       "name": "Signup",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "// ensure timestamp is set so signup email is unique",
+              "pm.environment.set('timestamp', Date.now());"
+            ],
+            "type": "text/javascript"
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// save the actual signup email to environment so Login can use it",
+              "const email = `test+${pm.environment.get('timestamp')}@example.com`;",
+              "pm.environment.set('lastSignupEmail', email);",
+              "console.log('Saved lastSignupEmail:', email);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
       "request": {
         "method": "POST",
         "header": [
@@ -33,6 +57,7 @@
       },
       "response": []
     },
+    
     {
       "name": "Login",
       "request": {
@@ -45,7 +70,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"pass123\"\n}"
+          "raw": "{\n  \"email\": \"{{lastSignupEmail}}\",\n  \"password\": \"pass123\"\n}"
         },
         "url": {
           "raw": "{{baseUrl}}/api/users/login",

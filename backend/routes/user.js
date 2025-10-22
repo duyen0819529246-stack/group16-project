@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import express from "express";
 import {
   signup,
@@ -34,16 +33,9 @@ router.post("/upload-avatar", protect, (req, res, next) => {
   next();
 }, upload.single("avatar"), uploadAvatar);
 
-
-export default router;
-=======
-const express = require('express');
-const router = express.Router();
-
-// Test route
-router.get('/', (req, res) => {
-  res.send('User route is working!');
+// ✅ Test route từ remote
+router.get("/test", (req, res) => {
+  res.send("User route is working!");
 });
 
-module.exports = router;
->>>>>>> 3975f2a7ad13d8ca03c4aea696bc5bc3a554ee23
+export default router;

@@ -29,10 +29,10 @@ router.put("/profile", protect, updateProfile);
 router.post("/profile/avatar", protect, upload.single("avatar"), uploadAvatar);
 
 // admin actions for users
-router.get("/users", protect, authorizeRoles("admin"), getUsers);
-router.post("/users", protect, authorizeRoles("admin"), createUser);
-router.put("/users/:id", protect, authorizeRoles("admin"), updateUserByAdmin);
-router.delete("/users/:id", protect, deleteUser);
+router.get("/", protect, authorizeRoles("admin"), getUsers);
+router.post("/", protect, authorizeRoles("admin"), createUser);
+router.put("/:id", protect, authorizeRoles("admin"), updateUserByAdmin);
+router.delete("/:id", protect, deleteUser);
 
 // password reset
 router.post("/forgot-password", forgotPassword);

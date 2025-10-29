@@ -7,40 +7,66 @@ const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
-    const t = localStorage.getItem("token");
-    if (!t) return null;
+    const accessToken = localStorage.getItem("accessToken");
+    if (!accessToken) return null;
     try {
-      const decoded = jwtDecode(t);
-      return { id: decoded.id, role: decoded.role, token: t };
+      const decoded = jwtDecode(accessToken);
+      // Kiểm tra xem token có hết hạn chưa
+      if (decoded.exp * 1000 < Date.now()) {
+        return null;
+      }
+      return { id: decoded.id, role: decoded.role };
     } catch {
       return null;
     }
   });
 
-  const login = async (token) => {
-    localStorage.setItem("token", token);
+  const [loading, setLoading] = useState(false);
+
+  const login = async (accessToken, refreshToken) => {
+    // Lưu cả 2 token vào localStorage
+    localStorage.setItem("accessToken", accessToken);
+    localStorage.setItem("refreshToken", refreshToken);
+    
     try {
-      const decoded = jwtDecode(token);
-      setUser({ id: decoded.id, role: decoded.role, token });
+      const decoded = jwtDecode(accessToken);
+      setUser({ id: decoded.id, role: decoded.role });
     } catch {
       setUser(null);
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem("token");
+  const logout = async () => {
+    const refreshToken = localStorage.getItem("refreshToken");
+    
+    try {
+      // Gọi API logout để revoke refresh token
+      await api.post("/auth/logout", { refreshToken });
+    } catch (err) {
+      console.error("Logout error:", err);
+    }
+    
+    // Xóa token khỏi localStorage
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
     setUser(null);
     window.location.href = "/login";
   };
 
   const signup = async (name, email, password) => {
-    const res = await api.post("/signup", { name, email, password });
-    const token = res.data.token;
-    if (token) await login(token);
+    const res = await api.post("/auth/register", { name, email, password });
+    const { accessToken, refreshToken } = res.data;
+    if (accessToken && refreshToken) {
+      await login(accessToken, refreshToken);
+    }
     return res.data;
   };
 
-  return <AuthContext.Provider value={{ user, login, logout, signup }}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={{ user, login, logout, signup, loading }}>
+      {children}
+    </AuthContext.Provider>
+  );
 };
 
 export const useAuth = () => useContext(AuthContext);

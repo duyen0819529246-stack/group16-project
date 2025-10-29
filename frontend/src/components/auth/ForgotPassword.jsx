@@ -11,7 +11,7 @@ export default function ForgotPassword() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await api.post("/forgot-password", { email });
+      await api.post("/users/forgot-password", { email });
       toast.show("Nếu email tồn tại, link đặt lại sẽ được gửi.", "success");
       navigate("/login");
     } catch (err) {

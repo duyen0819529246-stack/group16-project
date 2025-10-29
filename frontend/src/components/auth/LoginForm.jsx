@@ -15,14 +15,28 @@ export default function LoginForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await api.post("/login", { email, password });
-      const token = res?.data?.token;
-      if (!token) throw new Error("Server không trả token");
-      await login(token);
-      toast.show("Đăng nhập thành công", "success");
-      const decoded = jwtDecode(token);
-      if (decoded?.role === "admin") navigate("/admin");
-      else navigate("/");
+      const res = await api.post("/auth/login", { email, password });
+      
+      // Hỗ trợ cả 2 định dạng: mới (accessToken + refreshToken) và cũ (token)
+      const { accessToken, refreshToken, token } = res?.data || {};
+      
+      if (accessToken && refreshToken) {
+        // Format mới: có cả 2 token
+        await login(accessToken, refreshToken);
+        toast.show("Đăng nhập thành công", "success");
+        const decoded = jwtDecode(accessToken);
+        if (decoded?.role === "admin") navigate("/admin");
+        else navigate("/");
+      } else if (token) {
+        // Format cũ: chỉ có 1 token (backward compatibility)
+        await login(token, token); // Tạm dùng token cho cả 2
+        toast.show("Đăng nhập thành công", "success");
+        const decoded = jwtDecode(token);
+        if (decoded?.role === "admin") navigate("/admin");
+        else navigate("/");
+      } else {
+        throw new Error("Server không trả về token");
+      }
     } catch (err) {
       const msg = err?.response?.data?.message || err.message || "Sai email hoặc mật khẩu.";
       toast.show(msg, "error");

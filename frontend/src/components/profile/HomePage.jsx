@@ -18,7 +18,7 @@ export default function HomePage() {
   const fetchProfile = async () => {
     setLoading(true);
     try {
-      const res = await api.get("/profile");
+      const res = await api.get("/auth/profile");
       setProfile(res.data);
       setName(res.data.name || "");
     } catch (err) {
@@ -52,7 +52,7 @@ export default function HomePage() {
     try {
       const fd = new FormData();
       fd.append("avatar", avatarFile);
-      await api.post("/profile/avatar", fd);
+      await api.post("/users/profile/avatar", fd);
       toast.show("Upload avatar thành công", "success");
       fetchProfile();
     } catch (err) {

@@ -32,17 +32,11 @@ router.get("/profile", protect, getProfile);
 router.put("/profile", protect, updateProfile);
 router.post("/profile/avatar", protect, upload.single("avatar"), uploadAvatar);
 
-// admin actions for users
-router.get("/", protect, authorizeRoles("admin"), getUsers);
-router.post("/", protect, authorizeRoles("admin"), createUser);
-router.put("/:id", protect, authorizeRoles("admin"), updateUserByAdmin);
-router.delete("/:id", protect, deleteUser);
-
 // password reset
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password/:token", resetPassword);
 
-// ========== RBAC ROUTES ==========
+// ========== RBAC ROUTES (PHẢI ĐẶT TRƯỚC /:id) ==========
 // Get current user's permissions (All authenticated users)
 router.get("/permissions", protect, getMyPermissions);
 
@@ -54,5 +48,11 @@ router.get("/statistics/roles", protect, isAdmin, getRoleStatistics);
 
 // Update user role (Admin only)
 router.put("/:id/role", protect, isAdmin, updateUserRole);
+
+// ========== ADMIN ACTIONS (/:id phải ở cuối) ==========
+router.get("/", protect, authorizeRoles("admin"), getUsers);
+router.post("/", protect, authorizeRoles("admin"), createUser);
+router.put("/:id", protect, authorizeRoles("admin"), updateUserByAdmin);
+router.delete("/:id", protect, deleteUser);
 
 export default router;

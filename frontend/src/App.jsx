@@ -11,7 +11,8 @@ import ProtectedRoute from "./components/shared/ProtectedRoute";
 import { ToastProvider } from "./contexts/ToastContext";
 import { AuthProvider } from "./contexts/AuthContext";
 import Toast from "./components/shared/Toast";
-import HomePage from "./components/profile/HomePage"; // ✅ Thêm dòng này
+import HomePage from "./components/profile/HomePage";
+import AdminActivityLogs from "./components/admin/AdminActivityLogs";
 
 export default function App() {
   return (
@@ -37,6 +38,14 @@ export default function App() {
               element={
                 <AdminRoute>
                   <UserList />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/activity-logs"
+              element={
+                <AdminRoute>
+                  <AdminActivityLogs />
                 </AdminRoute>
               }
             />

@@ -13,8 +13,12 @@ import {
   deleteUser,
   forgotPassword,
   resetPassword,
+  getUsersByRole,
+  updateUserRole,
+  getRoleStatistics,
+  getMyPermissions,
 } from "../controllers/userController.js";
-import { protect, authorizeRoles } from "../middleware/authMiddleware.js";
+import { protect, authorizeRoles, checkRole, isAdmin, isModeratorOrAdmin } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 const storage = multer.memoryStorage();
@@ -37,5 +41,18 @@ router.delete("/:id", protect, deleteUser);
 // password reset
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password/:token", resetPassword);
+
+// ========== RBAC ROUTES ==========
+// Get current user's permissions (All authenticated users)
+router.get("/permissions", protect, getMyPermissions);
+
+// Get users by role (Admin & Moderator only)
+router.get("/role/:role", protect, checkRole(["admin", "moderator"]), getUsersByRole);
+
+// Get role statistics (Admin only)
+router.get("/statistics/roles", protect, isAdmin, getRoleStatistics);
+
+// Update user role (Admin only)
+router.put("/:id/role", protect, isAdmin, updateUserRole);
 
 export default router;

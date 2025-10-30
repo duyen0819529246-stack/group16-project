@@ -12,8 +12,12 @@ import { ToastProvider } from "./contexts/ToastContext";
 import { AuthProvider } from "./contexts/AuthContext";
 import Toast from "./components/shared/Toast";
 import HomePage from "./components/profile/HomePage";
+feature/log-rate-limit
+import AdminActivityLogs from "./components/admin/AdminActivityLogs";
+
 import RoleManagement from "./components/admin/RoleManagement";
 import UserPermissions from "./components/profile/UserPermissions";
+main
 
 export default function App() {
   return (
@@ -43,6 +47,15 @@ export default function App() {
               }
             />
             <Route
+feature/log-rate-limit
+              path="/admin/activity-logs"
+              element={
+                <AdminRoute>
+                  <AdminActivityLogs />
+                </AdminRoute>
+              }
+            />
+
               path="/admin/roles"
               element={
                 <AdminRoute>
@@ -58,6 +71,7 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
+ main
           </Routes>
           <Toast />
         </Router>

@@ -6,6 +6,7 @@ import RefreshToken from "../models/refreshTokenModel.js";
 import { v2 as cloudinary } from "cloudinary";
 import dotenv from "dotenv";
 import sendEmail from "../utils/sendEmail.js";
+import sharp from "sharp";
 
 dotenv.config();
 cloudinary.config({
@@ -20,7 +21,7 @@ const signAccessToken = (user) =>
   jwt.sign(
     { id: user._id, role: user.role }, 
     process.env.JWT_SECRET, 
-    { expiresIn: "30s" }
+    { expiresIn: "15m" }
   );
 
 // Refresh Token - Tạo token ngẫu nhiên và lưu vào database
@@ -185,27 +186,61 @@ export const updateProfile = async (req, res) => {
   }
 };
 
-// uploadAvatar (xác nhận)
+// uploadAvatar - Resize bằng Sharp trước khi upload lên Cloudinary
 export const uploadAvatar = async (req, res) => {
   try {
-    if (!req.file) return res.status(400).json({ message: "Không có file" });
-    // cloudinary đã config ở đầu file
+    if (!req.file) {
+      return res.status(400).json({ message: "Không có file" });
+    }
+
+    // Resize ảnh sử dụng Sharp
+    // Chuyển thành ảnh vuông 400x400px, định dạng JPEG, chất lượng 90%
+    const resizedImageBuffer = await sharp(req.file.buffer)
+      .resize(400, 400, {
+        fit: "cover", // Cắt ảnh để vừa khung vuông
+        position: "center", // Căn giữa
+      })
+      .jpeg({ quality: 90 })
+      .toBuffer();
+
+    // Upload lên Cloudinary
     const streamUpload = (buffer) =>
       new Promise((resolve, reject) => {
-        const stream = cloudinary.uploader.upload_stream({ folder: "avatars" }, (error, result) => {
-          if (result) resolve(result);
-          else reject(error);
-        });
+        const stream = cloudinary.uploader.upload_stream(
+          { 
+            folder: "avatars",
+            resource_type: "image",
+          },
+          (error, result) => {
+            if (result) resolve(result);
+            else reject(error);
+          }
+        );
         stream.end(buffer);
       });
 
-    const result = await streamUpload(req.file.buffer);
+    const result = await streamUpload(resizedImageBuffer);
+    
+    // Lưu URL vào database
     req.user.avatar = result.secure_url;
     await req.user.save();
-    return res.json({ message: "Upload avatar thành công", avatar: result.secure_url });
+
+    return res.json({ 
+      message: "Upload avatar thành công", 
+      avatar: result.secure_url,
+      details: {
+        width: result.width,
+        height: result.height,
+        format: result.format,
+        bytes: result.bytes,
+      }
+    });
   } catch (err) {
     console.error("uploadAvatar error:", err);
-    return res.status(500).json({ message: "Lỗi upload", error: err.message });
+    return res.status(500).json({ 
+      message: "Lỗi upload", 
+      error: err.message 
+    });
   }
 };
 
@@ -319,6 +354,146 @@ export const resetPassword = async (req, res) => {
     res.json({ message: "Đặt lại mật khẩu thành công" });
   } catch (err) {
     res.status(500).json({ message: err.message });
+  }
+};
+
+// ========== RBAC - ROLE MANAGEMENT APIs ==========
+
+// Get all users by role (Admin/Moderator only)
+export const getUsersByRole = async (req, res) => {
+  try {
+    const { role } = req.params;
+    
+    if (!["user", "admin", "moderator"].includes(role)) {
+      return res.status(400).json({ 
+        success: false,
+        message: "Role không hợp lệ. Chỉ chấp nhận: user, admin, moderator" 
+      });
+    }
+
+    const users = await User.find({ role }).select("-password");
+    
+    res.json({ 
+      success: true,
+      count: users.length,
+      role: role,
+      data: users 
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// Update user role (Admin only)
+export const updateUserRole = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { role } = req.body;
+
+    if (!["user", "admin", "moderator"].includes(role)) {
+      return res.status(400).json({ 
+        success: false,
+        message: "Role không hợp lệ. Chỉ chấp nhận: user, admin, moderator" 
+      });
+    }
+
+    // Không cho phép tự thay đổi role của chính mình
+    if (req.user._id.toString() === id) {
+      return res.status(403).json({ 
+        success: false,
+        message: "Không thể thay đổi role của chính mình" 
+      });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      id, 
+      { role }, 
+      { new: true, runValidators: true }
+    ).select("-password");
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: "Không tìm thấy user" });                                                                          
+    }
+
+    res.json({ 
+      success: true,
+      message: `Đã cập nhật role của ${user.name} thành ${role}`,
+      data: user 
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// Get role statistics (Admin only)
+export const getRoleStatistics = async (req, res) => {
+  try {
+    const stats = await User.aggregate([
+      {
+        $group: {
+          _id: "$role",
+          count: { $sum: 1 }
+        }
+      },
+      {
+        $sort: { _id: 1 }
+      }
+    ]);
+
+    const total = await User.countDocuments();
+
+    res.json({ 
+      success: true,
+      total: total,
+      statistics: stats 
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// Get current user's permissions (All authenticated users)
+export const getMyPermissions = async (req, res) => {
+  try {
+    const role = req.user.role;
+    
+    const permissions = {
+      user: {
+        canViewOwnProfile: true,
+        canEditOwnProfile: true,
+        canDeleteOwnAccount: true,
+        canViewAllUsers: false,
+        canEditOtherUsers: false,
+        canDeleteOtherUsers: false,
+        canManageRoles: false
+      },
+      moderator: {
+        canViewOwnProfile: true,
+        canEditOwnProfile: true,
+        canDeleteOwnAccount: true,
+        canViewAllUsers: true,
+        canEditOtherUsers: true,
+        canDeleteOtherUsers: false,
+        canManageRoles: false
+      },
+      admin: {
+        canViewOwnProfile: true,
+        canEditOwnProfile: true,
+        canDeleteOwnAccount: true,
+        canViewAllUsers: true,
+        canEditOtherUsers: true,
+        canDeleteOtherUsers: true,
+        canManageRoles: true
+      }
+    };
+
+    res.json({ 
+      success: true,
+      role: role,
+      permissions: permissions[role] || permissions.user
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
   }
 };
 

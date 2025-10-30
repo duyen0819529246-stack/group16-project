@@ -6,6 +6,7 @@ import RefreshToken from "../models/refreshTokenModel.js";
 import { v2 as cloudinary } from "cloudinary";
 import dotenv from "dotenv";
 import sendEmail from "../utils/sendEmail.js";
+import sharp from "sharp";
 
 dotenv.config();
 cloudinary.config({
@@ -20,7 +21,7 @@ const signAccessToken = (user) =>
   jwt.sign(
     { id: user._id, role: user.role }, 
     process.env.JWT_SECRET, 
-    { expiresIn: "30s" }
+    { expiresIn: "15m" }
   );
 
 // Refresh Token - Tạo token ngẫu nhiên và lưu vào database
@@ -185,27 +186,61 @@ export const updateProfile = async (req, res) => {
   }
 };
 
-// uploadAvatar (xác nhận)
+// uploadAvatar - Resize bằng Sharp trước khi upload lên Cloudinary
 export const uploadAvatar = async (req, res) => {
   try {
-    if (!req.file) return res.status(400).json({ message: "Không có file" });
-    // cloudinary đã config ở đầu file
+    if (!req.file) {
+      return res.status(400).json({ message: "Không có file" });
+    }
+
+    // Resize ảnh sử dụng Sharp
+    // Chuyển thành ảnh vuông 400x400px, định dạng JPEG, chất lượng 90%
+    const resizedImageBuffer = await sharp(req.file.buffer)
+      .resize(400, 400, {
+        fit: "cover", // Cắt ảnh để vừa khung vuông
+        position: "center", // Căn giữa
+      })
+      .jpeg({ quality: 90 })
+      .toBuffer();
+
+    // Upload lên Cloudinary
     const streamUpload = (buffer) =>
       new Promise((resolve, reject) => {
-        const stream = cloudinary.uploader.upload_stream({ folder: "avatars" }, (error, result) => {
-          if (result) resolve(result);
-          else reject(error);
-        });
+        const stream = cloudinary.uploader.upload_stream(
+          { 
+            folder: "avatars",
+            resource_type: "image",
+          },
+          (error, result) => {
+            if (result) resolve(result);
+            else reject(error);
+          }
+        );
         stream.end(buffer);
       });
 
-    const result = await streamUpload(req.file.buffer);
+    const result = await streamUpload(resizedImageBuffer);
+    
+    // Lưu URL vào database
     req.user.avatar = result.secure_url;
     await req.user.save();
-    return res.json({ message: "Upload avatar thành công", avatar: result.secure_url });
+
+    return res.json({ 
+      message: "Upload avatar thành công", 
+      avatar: result.secure_url,
+      details: {
+        width: result.width,
+        height: result.height,
+        format: result.format,
+        bytes: result.bytes,
+      }
+    });
   } catch (err) {
     console.error("uploadAvatar error:", err);
-    return res.status(500).json({ message: "Lỗi upload", error: err.message });
+    return res.status(500).json({ 
+      message: "Lỗi upload", 
+      error: err.message 
+    });
   }
 };
 
@@ -377,7 +412,7 @@ export const updateUserRole = async (req, res) => {
     ).select("-password");
 
     if (!user) {
-      return res.status(404).json({ success: false, message: "Không tìm thấy user" });
+      return res.status(404).json({ success: false, message: "Không tìm thấy user" });                                                                          
     }
 
     res.json({ 

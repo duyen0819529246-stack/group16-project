@@ -11,7 +11,7 @@ export default function HomePage() {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const res = await api.get(`/profile/${userId}`);
+        const res = await api.get(`/users/${userId}`);
         setUser(res.data);
       } catch (err) {
         console.error("Lỗi lấy thông tin user", err);

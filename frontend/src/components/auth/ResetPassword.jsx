@@ -14,7 +14,7 @@ export default function ResetPassword() {
     e.preventDefault();
     if (password !== confirm) return toast.show("Mật khẩu không khớp", "error");
     try {
-      await api.post(`/reset-password/${token}`, { newPassword: password });
+      await api.post(`/users/reset-password/${token}`, { newPassword: password });
       toast.show("Đổi mật khẩu thành công", "success");
       navigate("/login");
     } catch (err) {

@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import User from "../models/userModel.js";
+import RefreshToken from "../models/refreshTokenModel.js";
 import { v2 as cloudinary } from "cloudinary";
 import dotenv from "dotenv";
 import sendEmail from "../utils/sendEmail.js";
@@ -13,19 +14,57 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET || "",
 });
 
+// ========== TOKEN FUNCTIONS ==========
+// Access Token - Thời gian ngắn (15 phút) để bảo mật cao
+const signAccessToken = (user) => 
+  jwt.sign(
+    { id: user._id, role: user.role }, 
+    process.env.JWT_SECRET, 
+    { expiresIn: "30s" }
+  );
+
+// Refresh Token - Tạo token ngẫu nhiên và lưu vào database
+const generateRefreshToken = async (userId) => {
+  const token = crypto.randomBytes(64).toString("hex");
+  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 ngày
+  
+  await RefreshToken.create({
+    token,
+    userId,
+    expiresAt,
+  });
+  
+  return token;
+};
+
+// Legacy token function (giữ lại để backward compatibility)
 const signToken = (user) => jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: "7d" });
 
 // ========== AUTH ==========
 export const registerUser = async (req, res) => {
   try {
     const { name, email, password, role } = req.body;
-    if (!name || !email || !password) return res.status(400).json({ message: "Vui lòng nhập đầy đủ thông tin" });
+    if (!name || !email || !password) 
+      return res.status(400).json({ message: "Vui lòng nhập đầy đủ thông tin" });
+    
     const exists = await User.findOne({ email });
-    if (exists) return res.status(400).json({ message: "Email đã tồn tại" });
+    if (exists) 
+      return res.status(400).json({ message: "Email đã tồn tại" });
+    
     const hashed = await bcrypt.hash(password, 10);
     const user = await User.create({ name, email, password: hashed, role: role || "user" });
-    const token = signToken(user);
-    res.status(201).json({ message: "Đăng ký thành công", token });
+    
+    // Tạo cả Access Token và Refresh Token
+    const accessToken = signAccessToken(user);
+    const refreshToken = await generateRefreshToken(user._id);
+    
+    res.status(201).json({ 
+      message: "Đăng ký thành công", 
+      accessToken,
+      refreshToken,
+      // Giữ lại token cũ để backward compatibility
+      token: accessToken
+    });
   } catch (err) {
     res.status(500).json({ message: "Lỗi server", error: err.message });
   }
@@ -34,19 +73,89 @@ export const registerUser = async (req, res) => {
 export const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
-    if (!email || !password) return res.status(400).json({ message: "Vui lòng nhập email và mật khẩu" });
+    if (!email || !password) 
+      return res.status(400).json({ message: "Vui lòng nhập email và mật khẩu" });
+    
     const user = await User.findOne({ email });
-    if (!user) return res.status(400).json({ message: "Email hoặc mật khẩu không đúng" });
+    if (!user) 
+      return res.status(400).json({ message: "Email hoặc mật khẩu không đúng" });
+    
     const match = await bcrypt.compare(password, user.password);
-    if (!match) return res.status(400).json({ message: "Email hoặc mật khẩu không đúng" });
-    const token = signToken(user);
-    res.json({ message: "Đăng nhập thành công", token });
+    if (!match) 
+      return res.status(400).json({ message: "Email hoặc mật khẩu không đúng" });
+    
+    // Tạo cả Access Token và Refresh Token
+    const accessToken = signAccessToken(user);
+    const refreshToken = await generateRefreshToken(user._id);
+    
+    res.json({ 
+      message: "Đăng nhập thành công", 
+      accessToken,
+      refreshToken,
+      // Giữ lại token cũ để backward compatibility
+      token: accessToken
+    });
   } catch (err) {
     res.status(500).json({ message: "Lỗi server", error: err.message });
   }
 };
 
-export const logout = async (req, res) => res.json({ message: "Đã đăng xuất" });
+export const logout = async (req, res) => {
+  try {
+    const { refreshToken } = req.body;
+    
+    if (refreshToken) {
+      // Revoke refresh token trong database
+      await RefreshToken.updateOne(
+        { token: refreshToken },
+        { isRevoked: true }
+      );
+    }
+    
+    res.json({ message: "Đã đăng xuất" });
+  } catch (err) {
+    res.status(500).json({ message: "Lỗi server", error: err.message });
+  }
+};
+
+// API Refresh Access Token - Tạo Access Token mới từ Refresh Token
+export const refreshAccessToken = async (req, res) => {
+  try {
+    const { refreshToken } = req.body;
+    
+    if (!refreshToken) {
+      return res.status(401).json({ message: "Không có refresh token" });
+    }
+    
+    // Tìm refresh token trong database (phải còn hiệu lực)
+    const tokenDoc = await RefreshToken.findOne({ 
+      token: refreshToken,
+      isRevoked: false,
+      expiresAt: { $gt: new Date() }
+    });
+    
+    if (!tokenDoc) {
+      return res.status(401).json({ 
+        message: "Refresh token không hợp lệ hoặc đã hết hạn" 
+      });
+    }
+    
+    // Lấy thông tin user
+    const user = await User.findById(tokenDoc.userId);
+    if (!user) {
+      return res.status(401).json({ message: "User không tồn tại" });
+    }
+    
+    // Tạo Access Token mới
+    const newAccessToken = signAccessToken(user);
+    
+    res.json({ 
+      accessToken: newAccessToken 
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Lỗi server", error: err.message });
+  }
+};
 
 // ========== PROFILE ==========
 export const getProfile = async (req, res) => {

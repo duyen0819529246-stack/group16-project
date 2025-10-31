@@ -7,14 +7,15 @@ import {
   logout
 } from "../controllers/userController.js";
 import { protect } from "../middleware/authMiddleware.js";
+import { loginRateLimiter } from "../middleware/rateLimiter.js";
 
 const router = express.Router();
 
 // ✅ Đăng ký tài khoản
 router.post("/register", registerUser);
 
-// ✅ Đăng nhập
-router.post("/login", loginUser);
+// ✅ Đăng nhập (với rate limiter)
+router.post("/login", loginRateLimiter, loginUser);
 
 // ⭐ Refresh Access Token (MỚI)
 router.post("/refresh", refreshAccessToken);

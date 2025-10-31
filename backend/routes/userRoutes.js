@@ -13,8 +13,12 @@ import {
   deleteUser,
   forgotPassword,
   resetPassword,
+  getUsersByRole,
+  updateUserRole,
+  getRoleStatistics,
+  getMyPermissions,
 } from "../controllers/userController.js";
-import { protect, authorizeRoles } from "../middleware/authMiddleware.js";
+import { protect, authorizeRoles, checkRole, isAdmin, isModeratorOrAdmin } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 const storage = multer.memoryStorage();
@@ -28,14 +32,27 @@ router.get("/profile", protect, getProfile);
 router.put("/profile", protect, updateProfile);
 router.post("/profile/avatar", protect, upload.single("avatar"), uploadAvatar);
 
-// admin actions for users
+// password reset
+router.post("/forgot-password", forgotPassword);
+router.post("/reset-password/:token", resetPassword);
+
+// ========== RBAC ROUTES (PHẢI ĐẶT TRƯỚC /:id) ==========
+// Get current user's permissions (All authenticated users)
+router.get("/permissions", protect, getMyPermissions);
+
+// Get users by role (Admin & Moderator only)
+router.get("/role/:role", protect, checkRole(["admin", "moderator"]), getUsersByRole);
+
+// Get role statistics (Admin only)
+router.get("/statistics/roles", protect, isAdmin, getRoleStatistics);
+
+// Update user role (Admin only)
+router.put("/:id/role", protect, isAdmin, updateUserRole);
+
+// ========== ADMIN ACTIONS (/:id phải ở cuối) ==========
 router.get("/", protect, authorizeRoles("admin"), getUsers);
 router.post("/", protect, authorizeRoles("admin"), createUser);
 router.put("/:id", protect, authorizeRoles("admin"), updateUserByAdmin);
 router.delete("/:id", protect, deleteUser);
-
-// password reset
-router.post("/forgot-password", forgotPassword);
-router.post("/reset-password/:token", resetPassword);
 
 export default router;

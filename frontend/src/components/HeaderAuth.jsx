@@ -9,6 +9,7 @@ export default function HeaderAuth() {
       <div className="brand"><Link to="/" className="brand-link">MyApp</Link></div>
       <nav>
         <Link to="/" className="nav-link">Home</Link>
+ feature/redux-protected
         {user?.role === "admin" && (
           <>
             <Link to="/admin" className="nav-link">Quản lý Users</Link>
@@ -22,6 +23,38 @@ export default function HeaderAuth() {
           <>
             <span className="nav-user" style={{ color: user.role === "admin" ? "var(--danger)" : user.role === "moderator" ? "#1976d2" : "inherit" }}>
               {user.role?.toUpperCase() || "USER"}
+        
+        {/* Admin Menu */}
+        {user?.role === "admin" && (
+          <>
+            <Link to="/admin" className="nav-link">Quản lý Users</Link>
+            <Link to="/admin/roles" className="nav-link">Phân quyền</Link>
+          </>
+        )}
+        
+        {/* Moderator Menu */}
+        {user?.role === "moderator" && (
+          <Link to="/admin" className="nav-link">Moderator</Link>
+        )}
+        
+        {/* Permissions for all logged-in users */}
+        {user && <Link to="/permissions" className="nav-link">Quyền hạn</Link>}
+        
+        {user ? (
+          <>
+            <span className="nav-user" style={{
+              padding: "4px 8px",
+              borderRadius: "4px",
+              backgroundColor: 
+                user.role === "admin" ? "#ef4444" : 
+                user.role === "moderator" ? "#3b82f6" : 
+                "#10b981",
+              color: "white",
+              fontSize: "12px",
+              fontWeight: "bold"
+            }}>
+              {user.role.toUpperCase()}
+ main
             </span>
             <button className="btn-ghost" onClick={logout}>Đăng xuất</button>
           </>

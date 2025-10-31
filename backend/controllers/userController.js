@@ -20,7 +20,7 @@ const signAccessToken = (user) =>
   jwt.sign(
     { id: user._id, role: user.role }, 
     process.env.JWT_SECRET, 
-    { expiresIn: "30s" }
+    { expiresIn: "15m" }
   );
 
 // Refresh Token - Tạo token ngẫu nhiên và lưu vào database
@@ -63,7 +63,14 @@ export const registerUser = async (req, res) => {
       accessToken,
       refreshToken,
       // Giữ lại token cũ để backward compatibility
-      token: accessToken
+      token: accessToken,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        avatar: user.avatar || ""
+      }
     });
   } catch (err) {
     res.status(500).json({ message: "Lỗi server", error: err.message });
@@ -93,7 +100,14 @@ export const loginUser = async (req, res) => {
       accessToken,
       refreshToken,
       // Giữ lại token cũ để backward compatibility
-      token: accessToken
+      token: accessToken,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        avatar: user.avatar || ""
+      }
     });
   } catch (err) {
     res.status(500).json({ message: "Lỗi server", error: err.message });

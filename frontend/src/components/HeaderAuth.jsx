@@ -9,10 +9,20 @@ export default function HeaderAuth() {
       <div className="brand"><Link to="/" className="brand-link">MyApp</Link></div>
       <nav>
         <Link to="/" className="nav-link">Home</Link>
-        {user?.role === "admin" && <Link to="/admin" className="nav-link">Admin</Link>}
+        {user?.role === "admin" && (
+          <>
+            <Link to="/admin" className="nav-link">Quản lý Users</Link>
+            <Link to="/role-management" className="nav-link">Phân quyền</Link>
+          </>
+        )}
+        {user && (
+          <Link to="/permissions" className="nav-link">Quyền hạn</Link>
+        )}
         {user ? (
           <>
-            <span className="nav-user">{user.role}</span>
+            <span className="nav-user" style={{ color: user.role === "admin" ? "var(--danger)" : user.role === "moderator" ? "#1976d2" : "inherit" }}>
+              {user.role?.toUpperCase() || "USER"}
+            </span>
             <button className="btn-ghost" onClick={logout}>Đăng xuất</button>
           </>
         ) : (

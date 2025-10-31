@@ -64,7 +64,14 @@ export const registerUser = async (req, res) => {
       accessToken,
       refreshToken,
       // Giữ lại token cũ để backward compatibility
-      token: accessToken
+      token: accessToken,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        avatar: user.avatar || ""
+      }
     });
   } catch (err) {
     res.status(500).json({ message: "Lỗi server", error: err.message });
@@ -94,7 +101,14 @@ export const loginUser = async (req, res) => {
       accessToken,
       refreshToken,
       // Giữ lại token cũ để backward compatibility
-      token: accessToken
+      token: accessToken,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        avatar: user.avatar || ""
+      }
     });
   } catch (err) {
     res.status(500).json({ message: "Lỗi server", error: err.message });

@@ -75,6 +75,7 @@ export default function UserList() {
           <div className="field"><label>Vai trò</label>
             <select value={role} onChange={e=>setRole(e.target.value)}>
               <option value="user">user</option>
+              <option value="moderator">moderator</option>
               <option value="admin">admin</option>
             </select>
           </div>

@@ -1,13 +1,17 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import LoginForm from "./components/auth/LoginForm";
+import ReduxLoginDemo from "./components/auth/ReduxLoginDemo";
+import ReduxUserListDemo from "./components/auth/ReduxUserListDemo";
 import SignupForm from "./components/auth/SignupForm";
 import ForgotPassword from "./components/auth/ForgotPassword";
 import ResetPassword from "./components/auth/ResetPassword";
 import UserList from "./components/UserList";
+import RoleManagement from "./components/RoleManagement";
+import Permissions from "./components/Permissions";
 import AdminRoute from "./components/shared/AdminRoute";
-import HeaderAuth from "./components/HeaderAuth";
 import ProtectedRoute from "./components/shared/ProtectedRoute";
+import HeaderAuth from "./components/HeaderAuth";
 import { ToastProvider } from "./contexts/ToastContext";
 import { AuthProvider } from "./contexts/AuthContext";
 import Toast from "./components/shared/Toast";
@@ -26,6 +30,8 @@ export default function App() {
         <Router>
           <HeaderAuth />
           <Routes>
+            <Route path="/redux-demo/login" element={<ReduxLoginDemo />} />
+            <Route path="/redux-demo/users" element={<ReduxUserListDemo />} />
             <Route path="/login" element={<LoginForm />} />
             <Route path="/signup" element={<SignupForm />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -47,6 +53,9 @@ export default function App() {
               }
             />
             <Route
+ feature/redux-protected
+              path="/role-management"
+
 feature/log-rate-limit
               path="/admin/activity-logs"
               element={
@@ -57,6 +66,7 @@ feature/log-rate-limit
             />
 
               path="/admin/roles"
+main
               element={
                 <AdminRoute>
                   <RoleManagement />
@@ -67,10 +77,16 @@ feature/log-rate-limit
               path="/permissions"
               element={
                 <ProtectedRoute>
+feature/redux-protected
+                  <Permissions />
+                </ProtectedRoute>
+              }
+            />
                   <UserPermissions />
                 </ProtectedRoute>
               }
             />
+ main
  main
           </Routes>
           <Toast />
